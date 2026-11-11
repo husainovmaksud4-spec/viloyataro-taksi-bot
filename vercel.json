@@ -2,7 +2,8 @@
   "version": 2,
   "rewrites": [
     { "source": "/webhook", "destination": "/api/webhook.py" },
-    { "source": "/api/cron/check-subscription", "destination": "/api/cron/check_subscription.py" }
+    { "source": "/api/cron/check-subscription", "destination": "/api/cron/check_subscription.py" },
+    { "source": "/api/setup", "destination": "/api/webhook.py" }
   ],
   "crons": [
     { "path": "/api/cron/check_subscription", "schedule": "0 0 * * *" }

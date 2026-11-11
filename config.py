@@ -29,7 +29,7 @@ SUBSCRIPTION_DAYS = 30
 # =============================================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")  # Masalan: https://proyekt.vercel.app/webhook
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://viloyataro-taksi-bot-ov76.vercel.app")  # Masalan: https://proyekt.vercel.app/webhook
 
 # =============================================================================
 # Admin sozlamalari

@@ -37,6 +37,31 @@ def get_application():
     return app
 
 
+def setup_webhook():
+    """Setz Webhook manzilini Telegram API orqali sozlash"""
+    import urllib.request
+    import json
+    
+    from config import BOT_TOKEN, WEBHOOK_URL
+    
+    if not BOT_TOKEN:
+        return {"error": "BOT_TOKEN not configured"}
+    
+    if not WEBHOOK_URL:
+        WEBHOOK_URL = "https://viloyataro-taksi-bot-ov76.vercel.app"
+    
+    # Telegram API endpoint for setting webhook
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={WEBHOOK_URL}/webhook"
+    
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode())
+            return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
