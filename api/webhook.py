@@ -18,23 +18,23 @@ from config import BOT_TOKEN
 from telegram import Update
 from telegram.ext import Application
 
-# Applicationni xotirada saqlab quyamiz (bir konteyner ichida qayta ishlatilishi mumkin)
-_app = None
+# Application instance — Vercel Python runtime uchun kerakli
+app = None
 
 
 def get_application():
-    global _app
-    if _app is None:
+    global app
+    if app is None:
         if not BOT_TOKEN:
             raise RuntimeError("BOT_TOKEN sozlanmagan! .env yoki Vercel Environment Variables ni tekshiring.")
-        _app = Application.builder().token(BOT_TOKEN).build()
+        app = Application.builder().token(BOT_TOKEN).build()
 
         # Admin to'lov handlerlarini ro'yxatdan o'tkazamiz
         from payment_handlers import payment_admin_handlers
         for handler in payment_admin_handlers:
-            _app.add_handler(handler)
+            app.add_handler(handler)
 
-    return _app
+    return app
 
 
 class Handler(BaseHTTPRequestHandler):

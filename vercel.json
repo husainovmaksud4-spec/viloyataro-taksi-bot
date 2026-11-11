@@ -1,12 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/*.py", "use": "@vercel/python" },
-    { "src": "api/cron/*.py", "use": "@vercel/python" }
-  ],
-  "routes": [
-    { "src": "/webhook", "dest": "/api/webhook.py" },
-    { "src": "/cron/check-subscription", "dest": "/api/cron/check_subscription.py" }
+  "rewrites": [
+    { "source": "/webhook", "destination": "/api/webhook.py" },
+    { "source": "/api/cron/check-subscription", "destination": "/api/cron/check_subscription.py" }
   ],
   "crons": [
     { "path": "/api/cron/check_subscription", "schedule": "0 0 * * *" }

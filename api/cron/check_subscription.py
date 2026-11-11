@@ -19,6 +19,23 @@ from subscription_checker import check_expired_subscriptions
 from telegram import Bot
 
 
+# Vercel Python runtime uchun kerakli app instance
+app = None
+
+
+def get_app():
+    global app
+    if app is None:
+        bot = Bot(token=BOT_TOKEN)
+
+        async def _check():
+            try:
+                await check_expired_subscriptions(bot)
+            finally:
+                await bot.close()
+
+        app = lambda: asyncio.run(_check())
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         # Cron kalitini tekshiramiz (ixtiyoriy, lekin tavsiya etiladi)
