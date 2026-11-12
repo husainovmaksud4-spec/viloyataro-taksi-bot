@@ -42,4 +42,4 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "0"))
 
 # Vercel Cron uchun kalit (cron chaqirganda Authorization: Bearer <CRON_SECRET>)
-CRON_SECRET = os.getenv("CRON_SECRET", "")
+CRON_SECRET = os.getenv("CRON_SECRET", "")`nCARD_HOLDER = os.getenv("CARD_HOLDER", "Karta Egasi")
