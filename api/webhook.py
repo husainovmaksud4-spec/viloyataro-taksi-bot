@@ -1,74 +1,49 @@
-"""
-Telegram Bot webhook handler — Vercel serverless function.
-
-Vercel POST so'rovlarini qabul qiladi va python-telegram-bot orqali
-yangilanlarni (updates) qayta ishlaydi.
-"""
-
-import json
-import asyncio
-import os
-import sys
+import json, asyncio, os, sys, traceback
 from http.server import BaseHTTPRequestHandler
-
-# Loyiha ildizini Python yo'liga qo'shamiz (config, models, payment_handlers va h.k.)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from config import BOT_TOKEN, MONTHLY_FEE, CARD_NUMBER, CARD_HOLDER
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from payment_handlers import send_payment_request_to_admin, confirm_payment_handler, reject_payment_handler
 
-from config import BOT_TOKEN
-from telegram import Update
-from telegram.ext import Application
+async def start(d, u):
+    kb = [[InlineKeyboardButton("\u1f4b3 Obuna boshlash / To'lov qilish", callback_data="pay_info")]]
+    await d.message.reply_text("Assalomu alaykum! Viloyatlararo taksi guruhiga ulanish uchun oylik obuna to'lov tizimiga xush keliblisiz!\n\nTo'lovqo o'tish uchun pastdagi tugmani bosing:", reply_markup=InlineKeyboardMarkup(kb))
 
-# Applicationni xotirada saqlab quyamiz (bir konteyner ichida qayta ishlatilishi mumkin)
-_app = None
+async def pay_info(d, u):
+    q = d.callback_query
+    await q.answer()
+    txt = f"\u1f4b3 Oylik obuna to'lovi: {MONTHLY_FEE} so'm\n\u1f4b3 Karta raqami: {CARD_NUMBER}\n\u1f464 Karta egasi: {CARD_HOLDER}\n\nTo'lovqo qilganingizdan so'ng, chek rasmini shu botga yuboring."
+    await q.message.edit_text(txt)
 
+async def photo_handler(d, u):
+    photo = d.message.photo[-1].file_id
+    await send_payment_request_to_admin(d, u, photo)
 
-def get_application():
-    global _app
-    if _app is None:
-        if not BOT_TOKEN:
-            raise RuntimeError("BOT_TOKEN sozlanmagan! .env yoki Vercel Environment Variables ni tekshiring.")
-        _app = Application.builder().token(BOT_TOKEN).build()
+async def process(data):
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(pay_info, pattern="^pay_info$"))
+    app.add_handler(CallbackQueryHandler(confirm_payment_handler, pattern="^confirm_"))
+    app.add_handler(CallbackQueryHandler(reject_payment_handler, pattern="^reject_"))
+    app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
+    await app.initialize()
+    update = Update.de_json(data, app.bot)
+    await app.process_update(update)
+    await app.shutdown()
 
-        # Admin to'lov handlerlarini ro'yxatdan o'tkazamiz
-        from payment_handlers import payment_admin_handlers
-        for handler in payment_admin_handlers:
-            _app.add_handler(handler)
-
-    return _app
-
-
-class Handler(BaseHTTPRequestHandler):
+class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length)
-
-            if not body:
-                self.send_response(400)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(b'{"error": "empty body"}')
-                return
-
-            update_data = json.loads(body)
-            app = get_application()
-
-            update = Update.de_json(update_data, app.bot)
-            asyncio.run(app.process_update(update))
-
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8")
+            data = json.loads(body)
+            asyncio.run(process(data))
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": True}).encode())
-
-        except Exception as exc:
-            self.send_response(500)
-            self.send_header("Content-Type", "application/json")
+            self.wfile.write(b"{\"ok\":true}")
+        except Exception as e:
+            print(traceback.format_exc())
+            self.send_response(200)
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": False, "error": str(exc)}).encode())
-
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps({"status": "webhook active"}).encode())
+            self.wfile.write(str(e).encode())
